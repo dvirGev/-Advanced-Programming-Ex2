@@ -42,7 +42,16 @@ int main(int argc, char const *argv[])
     char buf[1024];
     fread(buf, sizeof(char), 1024, inputFile);
     printf("input: %s\n", buf);
-    encrypt(buf, key);
+    if (whatToDo == encode)
+    {
+        encrypt(buf, key);
+    }
+    else if (whatToDo == decode)
+    {
+        decrypt(buf, key);
+    }
+    
+    
     printf("output: %s\n", buf);
     fwrite(buf,sizeof(char), strlen(buf), outputFile);
     
