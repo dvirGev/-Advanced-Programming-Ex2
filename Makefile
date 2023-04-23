@@ -9,6 +9,6 @@ stdinExample:	stdin_main.c
 
 .PHONY: clean
 clean:
-	-rm encoder tester libCodec.so 2>/dev/null
+	-rm encoder tester 2>/dev/null
 
 //export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/
