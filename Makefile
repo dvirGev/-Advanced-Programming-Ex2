@@ -7,7 +7,7 @@ task:	codec.h basic_main.c
 stdinExample:	stdin_main.c
 		gcc stdin_main.c -L. -l Codec -o tester
 main:	main.c
-	gcc -lpthread main.c -L. -l Codec -o main
+	gcc main.c -L. -l Codec -o main -lpthread
 
 .PHONY: clean 
 setLib:
