@@ -2,23 +2,49 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #define encode 0
 #define decode 1
+
+typedef struct threadNode
+{
+    pthread_t t;
+    char buf[512];
+    struct threadNode *next;
+} node, *pnode;
+pnode initNode()
+{
+    pnode pn = (pnode)malloc(sizeof(node));
+    pn->next = NULL;
+    return pn;
+}
+void freeAllNodes(pnode start)
+{
+    pnode temp;
+    while (start != NULL)
+    {
+        temp = start;
+        start = start->next;
+        free(temp);
+    }
+}
+
 int main(int argc, char const *argv[])
 {
     int key, whatToDo;
-    FILE *inputFile;
-    FILE *outputFile;
-    if (argc != 5)
-	{
-	    printf("coder key -e < my_original_file > encripted_file\n");
-	    return 0;
-	}
+    pnode start = NULL;
+    pnode end = start;
+
+    if (argc != 3)
+    {
+        printf("coder key -e < my_original_file > encripted_file\n");
+        return 0;
+    }
     key = atoi(argv[1]);
     if (!strcmp(argv[2], "-e"))
     {
         whatToDo = encode;
-    } 
+    }
     else if (!strcmp(argv[2], "-d"))
     {
         whatToDo = decode;
@@ -26,36 +52,34 @@ int main(int argc, char const *argv[])
     else
     {
         printf("-e xor -d!\n");
-	    return 0;
+        return 0;
     }
-    if((inputFile = fopen(argv[3], "r+"))==NULL)
+    start = initNode();
+    end = start;
+    while (scanf("%s", end->buf) != EOF)
     {
-        printf("cant open %s\n", argv[3]);
-	    return 0;
+        if (whatToDo == encode)
+        {
+            pthread_create(&end->t, NULL, encrypt, (end->buf, key));
+        }
+        else if (whatToDo == decode)
+        {
+            pthread_create(&end->t, NULL, decrypt, (end->buf, key));
+        }
+        end->next = initNode();
+        end = end->next;
     }
-    if((outputFile = fopen(argv[4], "w+")) == NULL)
+    pnode temp;
+    while (start!=NULL)
     {
-        printf("cant open %s\n", argv[4]);
-	    return 0;
+        pthread_join(start->t,NULL);
+        printf("%s", start->buf);
+        temp = start;
+        start = start->next;
+        free(temp);
     }
+    
 
-    char buf[1024];
-    fread(buf, sizeof(char), 1024, inputFile);
-    printf("input: %s\n", buf);
-    if (whatToDo == encode)
-    {
-        encrypt(buf, key);
-    }
-    else if (whatToDo == decode)
-    {
-        decrypt(buf, key);
-    }
-    
-    
-    printf("output: %s\n", buf);
-    fwrite(buf,sizeof(char), strlen(buf), outputFile);
-    
-    fclose(inputFile);
-    fclose(outputFile);
+    // freeAllNodes(start);
     return 0;
 }
