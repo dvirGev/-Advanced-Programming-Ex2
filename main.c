@@ -8,16 +8,29 @@
 
 typedef struct threadNode
 {
-    pthread_t t;
     char buf[512];
     struct threadNode *next;
 } node, *pnode;
+
 int key, whatToDo;
+pthread_mutex_t lock;
+pnode start = NULL;
+pnode end = NULL;
 pnode initNode()
 {
     pnode pn = (pnode)malloc(sizeof(node));
     pn->next = NULL;
     return pn;
+}
+char *readFromStin()
+{
+    
+    pthread_mutex_lock(&lock);
+    char *res = fgets(end->buf, 512, stdin);
+    end->next = initNode();
+    end = end->next;
+    pthread_mutex_unlock(&lock);
+    return res;
 }
 void freeAllNodes(pnode start)
 {
@@ -30,15 +43,23 @@ void freeAllNodes(pnode start)
     }
 }
 
-void *runThread(char *buf)
+void *runThread()
 {
     if (whatToDo == encode)
     {
-        encrypt(buf, key);
+        char *buf;
+        while ((buf = readFromStin()) != NULL)
+        {
+            encrypt(buf, key);
+        }
     }
     else if(whatToDo == decode)
     {
-        decrypt(buf,key);
+        char *buf;
+        while ((buf = readFromStin()) != NULL)
+        {
+            decrypt(buf, key);
+        }
     }
     else
     {
@@ -49,14 +70,11 @@ void *runThread(char *buf)
 }
 int main(int argc, char const *argv[])
 {
-    pnode start = NULL;
-    pnode end = start;
     if (argc != 3)
     {
         printf("coder key -e < my_original_file > encripted_file\n");
         return 0;
     }
-
     key = atoi(argv[1]);
     if (!strcmp(argv[2], "-e"))
     {
@@ -74,22 +92,24 @@ int main(int argc, char const *argv[])
 
     start = initNode();
     end = start;
-    while (fgets(end->buf, 512, stdin) != NULL)
+
+    pthread_t threads[5];
+    for (size_t i = 0; i < 5; i++)
     {
-        pthread_create(&end->t, NULL, (void *)runThread, end->buf);
-        end->next = initNode();
-        end = end->next;
+        pthread_create(&threads[i], NULL, (void *)runThread, NULL);
+    }
+    for (size_t i = 0; i < 5; i++)
+    {
+        pthread_join(threads[i], NULL);
     }
     pnode temp;
     while (start != NULL)
     {
-        pthread_join(start->t, NULL);
         printf("%s", start->buf);
         temp = start;
         start = start->next;
         free(temp);
     }
 
-    // freeAllNodes(start);
     return 0;
 }
